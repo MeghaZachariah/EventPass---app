@@ -64,3 +64,17 @@ button:hover {
     background: #334155;
     transform: scale(1.03);
 }
+.event-card {
+    background: #1e293b;
+    padding: 15px;
+    margin: 15px auto;
+    width: 320px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.event-card:hover {
+    background: #334155;
+    transform: scale(1.03);
+}

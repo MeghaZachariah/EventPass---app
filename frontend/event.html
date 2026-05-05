@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Event</title>
+    <title>Event Details</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+    <h2>Event Details</h2>
+    <div class="form"> <!-- Reuse form styling for the box -->
+        <h1 id="eventTitle" style="color: #2563eb;"></h1>
+        <button onclick="registerEvent()">Confirm Registration</button>
+        <br><br>
+        <a href="dashboard.html" style="color: white;">Back to Dashboard</a>
+    </div>
 
-<h2>Event Details</h2>
-
-<p id="eventName"></p>
-
-<button onclick="registerEvent()">Register Now</button>
-
-<script src="js/register.js"></script>
-
+    <script src="js/register.js"></script>
+    <script>
+        document.getElementById("eventTitle").innerText = localStorage.getItem("event_title");
+    </script>
 </body>
 </html>
