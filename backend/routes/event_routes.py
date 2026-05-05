@@ -6,16 +6,19 @@ event_bp = Blueprint('events', __name__)
 
 @event_bp.route('/create_event', methods=['POST'])
 def create_event():
-    # Only Organizers should be able to create events
+    # Use get_json() to read the data sent by your fetch() call
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
     if session.get('role') != 'organizer':
         return jsonify({"error": "Unauthorized"}), 403
 
-    # Create new event object using form data from the frontend
     new_event = Event(
-        title=request.form.get('title'),
-        date=request.form.get('date'),
-        location=request.form.get('location'),
-        capacity=request.form.get('capacity'),
+        title=data.get('title'),
+        date=data.get('date'),
+        location=data.get('location'),
+        capacity=data.get('capacity'),
         organizer_id=session.get('user_id')
     )
 
@@ -26,10 +29,9 @@ def create_event():
 
 @event_bp.route('/get_events', methods=['GET'])
 def get_events():
-    # Fetch all events from the database
     events = Event.query.all()
     
-    # Convert database objects into a list of dictionaries (JSON)
+    # This matches your requested API format: id, title, date, location, capacity
     event_list = []
     for event in events:
         event_list.append({
