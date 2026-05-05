@@ -24,7 +24,7 @@ The system utilizes a class-based inheritance model for users:
 ## 📁 Files
 | File | Purpose |
 | :--- | :--- |
-| `schema.sql` | The raw SQL blueprint for all 6 tables. |
+| `schema.sql` | The raw SQL blueprint for all tables. |
 | `db_setup.py` | A Python automation script that initializes the `.db` file using the schema. |
 | `eventpass.db` | The actual SQLite database file (generated after setup). |
 
