@@ -1,68 +1,55 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from routes.registration_routes import reg_bp
-# 1. Initialize Flask App first
+from dotenv import load_dotenv
+from extensions import db
+from models import User, Event, Registration
+
+# Load Environment Variables
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
 app = Flask(__name__, 
             template_folder='../frontend', 
             static_folder='../frontend')
 
-# 2. Configuration
-app.secret_key = 'eventpass_secret_key_2026'
+# Configuration
+app.secret_key = os.getenv('FLASK_SECRET')
 basedir = os.path.abspath(os.path.dirname(__file__))
 db_path = os.path.join(basedir, "..", "database", "eventpass.db")
-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# 3. Initialize Database
-db = SQLAlchemy(app)
+# Initialize Database
+db.init_app(app)
 
-# 4. Import and Register Blueprint (MUST be after app and db are defined)
+# Register Blueprints AFTER db.init_app
 from routes.event_routes import event_bp
+from routes.registration_routes import reg_bp
 app.register_blueprint(event_bp)
 app.register_blueprint(reg_bp)
-# --- MODELS ---
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False) 
-    role = db.Column(db.String(20), nullable=False)
 
-# Initialize Database File
 with app.app_context():
     db.create_all()
 
-# --- ROUTES ---
-
+# --- AUTH ROUTES ---
 @app.route('/')
 def index():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return render_template('login.html')
 
-@app.route('/signup_page')
-def signup_page():
-    return render_template('signup.html')
-
 @app.route('/signup', methods=['POST'])
 def signup():
     username = request.form.get('username')
     email = request.form.get('email')
     password = request.form.get('password')
-    role = request.form.get('role')
-
-    user_exists = User.query.filter_by(email=email).first()
-    if user_exists:
+    
+    if User.query.filter_by(email=email).first():
         flash('Email already exists!', 'danger')
-        return redirect(url_for('signup_page'))
+        return redirect(url_for('index'))
 
-    new_user = User(username=username, email=email, password=password, role=role)
+    new_user = User(name=username, email=email, password=password)
     db.session.add(new_user)
     db.session.commit()
-    
-    flash('Account created! Please login.', 'success')
     return redirect(url_for('index'))
 
 @app.route('/login', methods=['POST'])
@@ -72,36 +59,25 @@ def login():
     user = User.query.filter_by(email=email, password=password).first()
     
     if user:
-        session['user_id'] = user.id
-        session['username'] = user.username
-        session['role'] = user.role
+        session['user_id'] = user.user_id
+        session['username'] = user.name
+        
+        # Check if they are an Organizer
+        is_organizer = db.session.execute(
+            db.text("SELECT 1 FROM ORGANIZER WHERE User_ID = :uid"),
+            {"uid": user.user_id}
+        ).fetchone()
+
+        session['role'] = 'organizer' if is_organizer else 'participant'
         return redirect(url_for('dashboard'))
-    else:
-        flash('Invalid credentials!', 'danger')
-        return redirect(url_for('index'))
+    return "Invalid Credentials", 401
 
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('index'))
-    
-    if session['role'] == 'organizer':
-        return render_template('organizer.html', name=session['username'])
-    return render_template('dashboard.html', name=session['username'])
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('index'))
-
-# --- ERROR HANDLERS ---
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
-
-@app.errorhandler(500)
-def internal_error(e):
-    return jsonify({"error": "Internal Server Error"}), 500
+    template = 'organizer.html' if session.get('role') == 'organizer' else 'dashboard.html'
+    return render_template(template, name=session['username'])
 
 if __name__ == '__main__':
     app.run(debug=True)
