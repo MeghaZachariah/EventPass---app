@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Signup</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -9,9 +11,9 @@
 <h2>Sign Up</h2>
 
 <form id="signupForm">
-    <input type="text" id="name" placeholder="Name"><br><br>
-    <input type="email" id="email" placeholder="Email"><br><br>
-    <input type="password" id="password" placeholder="Password"><br><br>
+    <input type="text" id="name" placeholder="Name" required><br><br>
+    <input type="email" id="email" placeholder="Email" required><br><br>
+    <input type="password" id="password" placeholder="Password" required><br><br>
 
     <select id="role">
         <option value="participant">Participant</option>
@@ -21,7 +23,8 @@
     <button type="submit" id="signupBtn">Sign Up</button>
 </form>
 
-<script src="js/auth.js"></script>
+<!-- At the bottom of signup.html -->
+<script src="js/register.js"></script>
 
 </body>
 </html>

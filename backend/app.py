@@ -23,9 +23,7 @@ from dotenv import load_dotenv
 from datetime import datetime # Added for registration timestamps
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
-app = Flask(__name__, 
-            template_folder='../frontend', 
-            static_folder='../frontend')
+app = Flask(__name__)
 CORS(app) 
 
 # Configuration
@@ -43,33 +41,50 @@ with app.app_context():
 
 # --- AUTH ROUTES ---
 
+from flask import send_from_directory
+
+# This route serves the actual login page
 @app.route('/')
 def index():
-    if 'user_id' in session:
-        return redirect(url_for('dashboard_view'))
-    return render_template('login.html')
+    # Adjust '../frontend' if your frontend folder is in a different spot relative to app.py
+    return send_from_directory('../frontend', 'login.html')
+
+# This route serves other static files (CSS, JS, images)
+@app.route('/<path:path>')
+def send_report(path):
+    return send_from_directory('../frontend', path)
 
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
     if not data:
-        return jsonify({"error": "No data provided"}), 400
+        return jsonify({"message": "No data provided"}), 400
         
     username = data.get('name') 
     email = data.get('email')
     password = data.get('password')
-    
+    role = data.get('role', 'participant').lower() # Get the role from frontend
+
     if User.query.filter_by(email=email).first():
-        return jsonify({"error": "Email already exists"}), 400
+        return jsonify({"message": "Email already exists"}), 400
 
     try:
         new_user = User(name=username, email=email, password=password)
         db.session.add(new_user)
         db.session.commit()
+
+        # If they chose 'organizer', add them to the ORGANIZER table
+        if role == 'organizer':
+            db.session.execute(
+                db.text("INSERT INTO ORGANIZER (User_ID) VALUES (:uid)"),
+                {"uid": new_user.user_id}
+            )
+            db.session.commit()
+
         return jsonify({"message": "Signup successful!"}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"message": str(e)}), 500
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -117,9 +132,6 @@ def dashboard_view():
         return redirect(url_for('index'))
     template = 'organizer.html' if session.get('role') == 'organizer' else 'dashboard.html'
     return render_template(template, name=session.get('username'))
-
-# --- EVENT ROUTES ---
-
 @app.route('/get_events', methods=['GET'])
 def get_events():
     try:
@@ -139,23 +151,19 @@ def get_events():
 
 @app.route('/register_event', methods=['POST'])
 def register_event():
-    data = request.get_json()
+    data = request.json
     user_id = data.get('user_id')
     event_id = data.get('event_id')
 
     if not user_id or not event_id:
-        return jsonify({"error": "Missing user or event ID"}), 400
+        return jsonify({"error": "Missing user_id or event_id"}), 400
 
-    # Check if already registered
-    existing = Registration.query.filter_by(user_id=user_id, event_id=event_id).first()
-    if existing:
-        return jsonify({"message": "Already registered!"}), 200
-    try:
-        generate_registration_qr(user_id, event_id)
-        return jsonify({"message": "Registration successful!"})
-    except Exception as e:
-        return jsonify({"error": "QR Generation failed: " + str(e)}), 500
+    # 1. Check if user is already registered to avoid duplicates
+    existing_reg = Registration.query.filter_by(user_id=user_id, event_id=event_id).first()
+    if existing_reg:
+        return jsonify({"message": "Already registered", "user_id": user_id, "event_id": event_id}), 200
 
+    # 2. CREATE the registration in the database
     new_reg = Registration(
         user_id=user_id,
         event_id=event_id,
@@ -166,11 +174,26 @@ def register_event():
     try:
         db.session.add(new_reg)
         db.session.commit()
-        return jsonify({"message": "Registration successful!"})
+        
+        # 3. GENERATE the QR code (This is why it wasn't working before!)
+        # This calls your imported generate_registration_qr function
+        generate_registration_qr(user_id, event_id)
+        
+        return jsonify({
+            "message": "Registration successful!",
+            "user_id": user_id,
+            "event_id": event_id
+        }), 201
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Database error"}), 500
+        print(f"Registration Error: {e}")
+        return jsonify({"error": "Failed to complete registration: " + str(e)}), 500
+from flask import send_from_directory
+@app.route('/qr_module/qr_images/<path:filename>')
+def custom_static(filename):
+    qr_folder_path = os.path.join(os.path.dirname(basedir), 'qr_module', 'qr_images')
+    return send_from_directory(qr_folder_path, filename)
 
 if __name__ == '__main__':
-    # Running on default port 5000 as requested
-    app.run(debug=True, port=5000)
+    app.run(port=5000, debug=True)

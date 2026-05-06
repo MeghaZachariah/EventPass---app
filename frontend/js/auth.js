@@ -1,57 +1,37 @@
-document.getElementById("signupForm")?.addEventListener("submit", function(e) {
-    e.preventDefault();
+const API_BASE_URL = window.location.origin;
 
-    const name = document.getElementById("name").value;
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    const role = document.getElementById("role").value;
+const loginForm = document.getElementById('loginForm');
 
-    fetch("http://127.0.0.1:5000/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role })
-    })
-    .then(async res => {
-        const data = await res.json();
-        if (res.ok) {
-            alert("Signup successful!");
-            window.location.href = "login.html";
-        } else {
-            alert("Signup failed: " + (data.error || "Unknown error"));
+if (loginForm) {
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault(); // Stops the '?' refresh in the URL
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert("Login Success!");
+                window.location.href = 'dashboard.html';
+                // Add this inside your login success logic in auth.js
+                localStorage.setItem("user_id", data.user_id); 
+                localStorage.setItem("username", data.username);
+            } else if (response.status === 401) {
+                alert("Invalid email or password. Please try again.");
+            } else {
+                alert("Error: " + (data.message || "Unknown error occurred"));
+            }
+        } catch (error) {
+            console.error("Connection failed:", error);
+            alert("Server unreachable. Ensure your Flask app is running!");
         }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Server error. Check if backend is running!");
     });
-});
-
-// --- LOGIN LOGIC ---
-document.getElementById("loginForm")?.addEventListener("submit", function(e) {
-    e.preventDefault();
-
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    fetch("http://127.0.0.1:5000/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-    })
-    .then(async res => {
-        const data = await res.json();
-        // Inside your auth.js login .then()
-        if (res.ok) {
-        alert("Login successful!");
-        localStorage.setItem("username", data.username); 
-        localStorage.setItem("user_id", data.user_id); // <--- ADD THIS LINE
-        window.location.href = "dashboard.html";
-        } else {
-            alert("Login failed: " + (data.error || "Invalid Credentials"));
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Login failed. Make sure the server is on.");
-    });
-});
+}

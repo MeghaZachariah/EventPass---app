@@ -55,3 +55,5 @@ CREATE TABLE IF NOT EXISTS QR_PASS (
     QR_Path TEXT    NOT NULL,
     FOREIGN KEY (User_ID) REFERENCES USER (User_ID) ON DELETE CASCADE
 );
+INSERT INTO EVENT (Event_Name, Date, Location) 
+VALUES ('Python Workshop', '2026-06-01', 'Lab A');

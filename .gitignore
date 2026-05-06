@@ -220,3 +220,12 @@ __marimo__/
 .env
 __pycache__/
 *.db
+# --- Custom EventPass Project Ignores ---
+# Ignore the actual database file (Megha and Aparna will generate their own)
+database/eventpass.db
+
+# Ignore all generated QR code images
+qr_module/qr_images/*.png
+
+# Ignore VS Code settings if they exist
+.vscode/

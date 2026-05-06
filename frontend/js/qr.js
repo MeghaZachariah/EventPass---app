@@ -1,26 +1,22 @@
 document.addEventListener("DOMContentLoaded", function() {
-    const userId = localStorage.getItem("user_id");
-    const username = localStorage.getItem("username");
-    // Get the event ID from the last event the user clicked
-    const eventId = localStorage.getItem("event_id"); 
-
-    if (!userId || !eventId) {
-        alert("Session expired or no event selected.");
-        window.location.href = "dashboard.html";
-        return;
-    }
-
-    document.getElementById("displayUsername").innerText = username;
-    document.getElementById("displayUserId").innerText = `User: ${userId} | Event: ${eventId}`;
-
-    // Path matches Person 3's logic: qr_{user_id}_{event_id}.png
-    const qrImagePath = `../qr_module/qr_images/qr_${userId}_${eventId}.png`;
+    // 1. Pull data from the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('user_id');
+    const eventId = urlParams.get('event_id');
     
-    const qrImgElement = document.getElementById("qrImage");
-    qrImgElement.src = qrImagePath;
+    // 2. Get username (ensure this matches the key used in auth.js)
+    const username = localStorage.getItem("username") || "Participant";
 
-    qrImgElement.onerror = function() {
-        this.src = "https://via.placeholder.com/200?text=QR+Not+Generated+Yet";
-        console.warn("Looking for QR at: " + qrImagePath);
-    };
+    const qrImgElement = document.getElementById("qrImage");
+    const nameDisplay = document.getElementById("displayUsername");
+    const idDisplay = document.getElementById("displayUserId");
+
+    // 3. Update the UI text
+    if (nameDisplay) nameDisplay.innerText = username;
+    if (idDisplay) idDisplay.innerText = `User ID: ${userId} | Event ID: ${eventId}`;
+
+    // 4. Load the image (which is already working!)
+    if (userId && eventId && qrImgElement) {
+        qrImgElement.src = `/qr_module/qr_images/qr_${userId}_${eventId}.png`;
+    }
 });
