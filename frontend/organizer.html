@@ -1,22 +1,102 @@
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Organizer Panel</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventPass | Organizer Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0B1E3F;
+            margin: 0;
+            padding-bottom: 40px;
+        }
+        .premium-card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .admin-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 14px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+        .admin-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: white;
+        }
+        .create-btn {
+            background: #2563eb;
+            color: white;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .create-btn:active { transform: scale(0.98); }
+    </style>
 </head>
 <body>
-    <h2>Create New Event</h2>
-    <form id="eventForm">
-        <input type="text" id="title" placeholder="Event Title" required>
-        <input type="date" id="date" required>
-        <input type="text" id="location" placeholder="Location (e.g., Lab A)" required>
-        <input type="number" id="capacity" placeholder="Capacity" required>
-        <button type="submit">Create Event</button>
-    </form>
 
-    <br>
-    <a href="dashboard.html" style="color: white;">View All Events</a>
+    <!-- Header -->
+    <nav class="px-6 py-6 flex justify-between items-center border-b border-slate-800">
+        <div>
+            <h1 class="text-white text-xl font-bold">Organizer Hub</h1>
+            <p class="text-slate-400 text-xs mt-0.5">Manage your event portfolio</p>
+        </div>
+        <a href="dashboard.html" class="text-slate-400 hover:text-white">
+            <i class="fas fa-sign-out-alt text-lg"></i>
+        </a>
+    </nav>
+
+    <main class="px-6 mt-6">
+        <!-- Section 1: Create Event -->
+        <div class="mb-8">
+            <h2 class="text-white font-semibold mb-4 flex items-center">
+                <i class="fas fa-plus-circle mr-2 text-blue-500"></i> Create New Event
+            </h2>
+            <div class="premium-card">
+                <form id="createEventForm">
+                    <input type="text" id="eventName" placeholder="Event Name" class="admin-input" required>
+                    <input type="date" id="eventDate" class="admin-input" required>
+                    <input type="text" id="eventLocation" placeholder="Location" class="admin-input" required>
+                    <textarea id="eventDesc" placeholder="Description..." class="admin-input h-24 resize-none" required></textarea>
+                    
+                    <button type="submit" class="create-btn shadow-lg shadow-blue-500/20">
+                        Post Event
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Section 2: My Events -->
+        <div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-white font-semibold flex items-center">
+                    <i class="fas fa-list-ul mr-2 text-blue-500"></i> My Events
+                </h2>
+                <span class="text-slate-500 text-xs">Total: <span id="eventCount">0</span></span>
+            </div>
+
+            <div id="myEventsList" class="space-y-4">
+                <!-- Placeholder for dynamic list -->
+                <div class="text-center py-10 text-slate-500 italic text-sm">
+                    No events managed yet.
+                </div>
+            </div>
+        </div>
+    </main>
 
     <script src="js/organizer.js"></script>
 </body>

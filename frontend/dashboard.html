@@ -1,15 +1,106 @@
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Dashboard</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventPass | Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0B1E3F;
+            margin: 0;
+            padding-bottom: 90px; /* Space for bottom nav */
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .event-card {
+            transition: transform 0.2s ease;
+        }
+        .event-card:active { transform: scale(0.97); }
+    </style>
 </head>
 <body>
-    <h2>Event Dashboard</h2>
-    <!-- This is the ONLY container you need -->
-    <div id="events"></div> 
+
+    <!-- Top Navbar -->
+    <nav class="sticky top-0 z-50 bg-[#0B1E3F] px-6 py-5 flex justify-between items-center">
+        <h1 class="text-white text-xl font-bold tracking-tight">EventPass</h1>
+        <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white border-2 border-slate-700 overflow-hidden">
+            <i class="fas fa-user text-sm"></i>
+        </div>
+    </nav>
+
+    <!-- Personalized Greeting -->
+    <div class="px-6 pt-2 pb-4">
+        <p class="text-slate-400 text-sm">Hello,</p>
+        <h1 id="user-greeting" class="text-white text-2xl font-bold">Explorer</h1>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="px-6 mb-6">
+        <div class="relative">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+            <input type="text" placeholder="Search events..." 
+                class="w-full bg-slate-800/40 border border-slate-700/50 text-white rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-500">
+        </div>
+    </div>
+
+    <!-- Category Filters -->
+    <div class="flex space-x-3 px-6 mb-8 overflow-x-auto no-scrollbar">
+        <button class="bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-medium whitespace-nowrap">All</button>
+        <button class="bg-slate-800/60 text-slate-400 px-6 py-2 rounded-full text-sm font-medium whitespace-nowrap">Workshops</button>
+        <button class="bg-slate-800/60 text-slate-400 px-6 py-2 rounded-full text-sm font-medium whitespace-nowrap">Tech Talks</button>
+        <button class="bg-slate-800/60 text-slate-400 px-6 py-2 rounded-full text-sm font-medium whitespace-nowrap">Networking</button>
+    </div>
+
+    <!-- Events Feed -->
+    <main class="px-6">
+        <div class="flex justify-between items-center mb-5">
+            <h2 class="text-white font-semibold text-lg">Upcoming Events</h2>
+            <button class="text-blue-400 text-sm font-medium">View All</button>
+        </div>
+
+        <div id="events" class="space-y-5">
+            <!-- Loading State -->
+            <div class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-blue-500 text-2xl mb-3"></i>
+                <p class="text-slate-500 text-sm">Curating events for you...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Tab Navigation -->
+    <div class="fixed bottom-0 left-0 right-0 bg-[#0B1E3F]/80 backdrop-blur-xl border-t border-slate-800/50 px-10 py-5 flex justify-between items-center z-50">
+        <button class="text-blue-500 flex flex-col items-center">
+            <i class="fas fa-home text-xl"></i>
+            <span class="text-[10px] mt-1 font-medium">Home</span>
+        </button>
+        <a href="profile.html" class="text-slate-400 flex flex-col items-center">
+            <i class="fas fa-qrcode text-xl"></i>
+            <span class="text-[10px] mt-1 font-medium">My Pass</span>
+        </a>
+        <button class="text-slate-400 flex flex-col items-center">
+            <i class="fas fa-calendar-check text-xl"></i>
+            <span class="text-[10px] mt-1 font-medium">History</span>
+        </button>
+    </div>
 
     <script src="js/events.js"></script>
+    <script>
+        // Inject username from login
+       document.addEventListener('DOMContentLoaded', () => {
+    const nameDisplay = document.getElementById('user-name-display'); // Adjust ID to match your HTML
+    const storedName = localStorage.getItem('username');
+    
+    if (storedName) {
+        nameDisplay.textContent = storedName;
+    } else {
+        nameDisplay.textContent = "Guest";
+    }
+});
+    </script>
 </body>
 </html>

@@ -1,37 +1,84 @@
-const API_BASE_URL = window.location.origin;
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Handle Signup
+    const signupForm = document.getElementById('signupForm');
+    if (signupForm) {
+        signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const selectedRole = document.querySelector('input[name="role"]:checked')?.value || 'participant';
 
-const loginForm = document.getElementById('loginForm');
+    // MATCH THESE KEYS EXACTLY TO YOUR SQL SCHEMA
+    const userData = {
+        Name: document.getElementById('name').value,
+        Email: document.getElementById('email').value,
+        Password: document.getElementById('password').value,
+        Role: selectedRole // This helps your backend route to ORGANIZER or PARTICIPANT tables
+    };
 
-if (loginForm) {
-    loginForm.addEventListener('submit', async (event) => {
-        event.preventDefault(); // Stops the '?' refresh in the URL
+    console.log("Sending data:", userData); // Helpful for debugging in F12 console
 
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+    try {
+        const response = await fetch('http://127.0.0.1:5000/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+        });
+        
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
+                const data = await response.json();
 
-            const data = await response.json();
-
-            if (response.ok) {
-                alert("Login Success!");
-                window.location.href = 'dashboard.html';
-                // Add this inside your login success logic in auth.js
-                localStorage.setItem("user_id", data.user_id); 
-                localStorage.setItem("username", data.username);
-            } else if (response.status === 401) {
-                alert("Invalid email or password. Please try again.");
-            } else {
-                alert("Error: " + (data.message || "Unknown error occurred"));
+                if (response.ok) {
+                    alert("Account created successfully!");
+                    window.location.href = 'login.html';
+                } else {
+                    // This will show the SQLite error if something goes wrong
+                    alert("Error: " + (data.message || "Signup failed"));
+                }
+            } catch (error) {
+                console.error("Signup error:", error);
+                alert("Cannot connect to server. Ensure Flask is running.");
             }
-        } catch (error) {
-            console.error("Connection failed:", error);
-            alert("Server unreachable. Ensure your Flask app is running!");
-        }
-    });
-}
+        });
+    }
+
+    // 2. Handle Login
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const loginData = {
+                Email: document.getElementById('email').value,
+                Password: document.getElementById('password').value
+            };
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(loginData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Storing session data
+                    localStorage.setItem('user_id', data.User_ID); 
+                    localStorage.setItem('username', data.Name);
+                    localStorage.setItem('role', data.Role);
+
+                    if (data.Role === 'organizer') {
+                        window.location.href = 'organizer.html';
+                    } else {
+                        window.location.href = 'dashboard.html';
+                    }
+                } else {
+                    alert(data.message || "Invalid Email or Password.");
+                }
+            } catch (error) {
+                console.error("Login error:", error);
+                alert("Login failed. Check backend logs.");
+            }
+        });
+    }
+});

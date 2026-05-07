@@ -55,5 +55,14 @@ CREATE TABLE IF NOT EXISTS QR_PASS (
     QR_Path TEXT    NOT NULL,
     FOREIGN KEY (User_ID) REFERENCES USER (User_ID) ON DELETE CASCADE
 );
-INSERT INTO EVENT (Event_Name, Date, Location) 
-VALUES ('Python Workshop', '2026-06-01', 'Lab A');
+-- 1. Create a User
+INSERT INTO USER (Name, Email, Password) 
+VALUES ('Admin User', 'admin@eventpass.com', 'hashed_password_123');
+
+-- 2. Make that User an Organizer (User_ID will be 1)
+INSERT INTO ORGANIZER (User_ID, Company_Name) 
+VALUES (1, 'Tech Academy');
+
+-- 3. Now you can safely create the Event linked to Organizer 1
+INSERT INTO EVENT (Title, Date, Location, Capacity, Organizer_ID) 
+VALUES ('Python Workshop', '2026-06-01', 'Lab A', 50, 1);
