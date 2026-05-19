@@ -54,6 +54,14 @@ def serve_qr_images(filename):
     qr_folder_path = os.path.join(project_root, 'qr_module', 'qr_images')
     return send_from_directory(qr_folder_path, filename)
 
+@app.route('/signup.html')
+def serve_signup_page():
+    return send_from_directory('../frontend', 'signup.html')
+
+@app.route('/organizer_details.html')
+def serve_organizer_details():
+    return send_from_directory('../frontend', 'organizer_details.html')
+
 @app.route('/<path:path>')
 def serve_frontend(path):
     return send_from_directory('../frontend', path)
@@ -66,13 +74,11 @@ def signup():
     if not data:
         return jsonify({"message": "No data provided"}), 400
         
-    # CHANGE THESE TO MATCH auth.js (UPPERCASE)
-    username = data.get('Name')   # Changed from 'name'
-    email = data.get('Email')      # Changed from 'email'
-    password = data.get('Password') # Changed from 'password'
-    role = data.get('Role', 'participant').lower() # Changed from 'role'
+    username = data.get('Name')   
+    email = data.get('Email')      
+    password = data.get('Password') 
+    role = data.get('Role', 'participant').lower() 
 
-    # Error handling if any field is missing
     if not all([username, email, password]):
         return jsonify({"message": "Missing required fields"}), 400
 
@@ -94,7 +100,6 @@ def signup():
         return jsonify({"message": "Signup successful!"}), 201
     except Exception as e:
         db.session.rollback()
-        # This will print the actual error to your terminal for debugging
         print(f"Signup Database Error: {e}") 
         return jsonify({"message": "Database error occurred"}), 500
 
@@ -104,38 +109,40 @@ def login():
     if not data:
         return jsonify({"error": "No data provided"}), 400
 
-    # FIX: Change these to match auth.js (UPPERCASE)
-    email = data.get('Email')      # Was data.get('email')
-    password = data.get('Password') # Was data.get('password')
-    
-    # Debug: Print to terminal to see what the backend actually sees
-    print(f"Login attempt for: {email}")
+    email = data.get('Email')      
+    password = data.get('Password') 
+    selected_role = data.get('Role', 'participant').lower() 
 
-    # Querying the database
+    print(f"Login attempt for: {email} as explicit role: {selected_role}")
+
     user = User.query.filter_by(email=email, password=password).first()
     
     if user:
-        session.clear()
-        session['user_id'] = user.user_id
-        session['username'] = user.name
-        
-        # Check role logic...
-        role = 'participant'
+        actual_db_role = 'participant'
         try:
             is_organizer = db.session.execute(
                 db.text("SELECT 1 FROM ORGANIZER WHERE User_ID = :uid"),
                 {"uid": user.user_id}
             ).fetchone()
             if is_organizer:
-                role = 'organizer'
-        except Exception:
-            role = 'participant'
+                actual_db_role = 'organizer'
+        except Exception as e:
+            print(f"Database relational error check failed: {e}")
+            actual_db_role = 'participant'
+
+        if selected_role != actual_db_role:
+            return jsonify({"message": f"Account verification mapping failed. Not configured as an {selected_role.capitalize()}."}), 401
+
+        session.clear()
+        session['user_id'] = user.user_id
+        session['username'] = user.name
+        session['role'] = actual_db_role
 
         return jsonify({
             "message": "Login successful",
             "username": user.name,
-            "User_ID": user.user_id, # Match auth.js key expectation
-            "Role": role             # Match auth.js key expectation
+            "User_ID": user.user_id, 
+            "Role": actual_db_role            
         }), 200
     
     return jsonify({"message": "Invalid Email or Password."}), 401
@@ -160,26 +167,107 @@ def get_events():
                 "title": event.title,
                 "date": event.date,
                 "location": event.location,
-                "capacity": event.capacity
+                "capacity": event.capacity or 100
             })
         return jsonify(event_list)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/create_event', methods=['POST'])
+def create_event():
+    # 🌟 Ensure an organizer is actually logged in via session
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized. Please log in again."}), 401
+        
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No input parameters found"}), 400
+        
+    title = data.get('title')
+    date = data.get('date')
+    location = data.get('location')
+    capacity = data.get('capacity', 100)
+    
+    # Grab the logged-in user's ID from Flask session
+    organizer_id = session['user_id'] 
+
+    if not all([title, date, location]):
+        return jsonify({"error": "Missing required title, date, or location values"}), 400
+
+    try:
+        # 🌟 FIX: Passing the organizer_id satisfies the database NOT NULL constraint!
+        new_event = Event(
+            title=title,
+            date=date,
+            location=location,
+            capacity=capacity,
+            organizer_id=organizer_id  # Matches your models.py foreign key field name
+        )
+        db.session.add(new_event)
+        db.session.commit()
+        return jsonify({"message": "Event generated successfully!", "event_id": new_event.event_id}), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"Database insertion crash error: {e}")
+        return jsonify({"error": "Failed to sync event creation: " + str(e)}), 500
+@app.route('/get_user_registrations/<int:user_id>', methods=['GET'])
+def get_user_registrations(user_id):
+    try:
+        registrations = db.session.query(Registration, Event).join(
+            Event, Registration.event_id == Event.event_id
+        ).filter(Registration.user_id == user_id).all()
+        
+        history_list = []
+        for reg, event in registrations:
+            history_list.append({
+                "id": event.event_id,
+                "title": event.title,
+                "date": event.date,
+                "location": event.location,
+                "status": reg.attendance_status
+            })
+        return jsonify(history_list), 200
+    except Exception as e:
+        print(f"Error fetching registrations: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/get_event_attendees/<int:event_id>', methods=['GET'])
+def get_event_attendees(event_id):
+    try:
+        roster = db.session.query(Registration, User).join(
+            User, Registration.user_id == User.user_id
+        ).filter(Registration.event_id == event_id).all()
+        
+        attendee_list = []
+        for reg, user in roster:
+            attendee_list.append({
+                "user_id": user.user_id,
+                "name": user.name,
+                "email": user.email,
+                "reg_date": reg.reg_date,
+                "status": reg.attendance_status
+            })
+        return jsonify(attendee_list), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to look up roster entries: " + str(e)}), 500
+
 @app.route('/qr')
 def serve_qr_page():
     return send_from_directory('../frontend', 'qr.html')
+
 @app.route('/register_event', methods=['POST'])
 def register_event():
     data = request.get_json()
-    user_id = data.get('user_id')
-    event_id = data.get('event_id')
-
-    if not user_id or not event_id:
-        return jsonify({"error": "Missing user_id or event_id"}), 400
+    
+    try:
+        user_id = int(data.get('user_id'))
+        event_id = int(data.get('event_id'))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid or missing user_id or event_id"}), 400
 
     existing_reg = Registration.query.filter_by(user_id=user_id, event_id=event_id).first()
     if existing_reg:
-        return jsonify({"message": "Already registered", "user_id": user_id, "event_id": event_id}), 200
+        return jsonify({"message": "You are already registered for this event!", "user_id": user_id, "event_id": event_id}), 200
 
     try:
         new_reg = Registration(
@@ -204,4 +292,4 @@ def register_event():
         return jsonify({"error": "Failed to complete registration: " + str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
